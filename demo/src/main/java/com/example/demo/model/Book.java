@@ -1,6 +1,9 @@
 package com.example.demo.model;
 
+import com.example.demo.dto.response.BookResponse;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 
@@ -8,6 +11,7 @@ import jakarta.persistence.Id;
 public class Book {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
@@ -41,5 +45,15 @@ public class Book {
     }
     public void setAuthor(String author){
         this.author = author;
+    }
+
+    public BookResponse toResponse() {
+        BookResponse bookResponse = new BookResponse();
+
+        bookResponse.setId(this.id);
+        bookResponse.setTitle(this.title);
+        bookResponse.setAuthor(this.author);
+
+        return bookResponse;
     }
 }

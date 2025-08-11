@@ -1,6 +1,15 @@
 package com.example.demo;
 
+import com.example.demo.dto.request.CreateBookRequest;
+import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.BookResponse;
+import com.example.demo.dto.response.ErrorResponse;
+import com.example.demo.service.BookService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.model.Book;
 import com.example.demo.repository.BookRepository;
@@ -9,6 +18,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import java.util.List;
@@ -17,9 +28,13 @@ import java.util.List;
 @RequestMapping("/books")
 
 public class BookController {
+    private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private BookService bookService;
 
     @GetMapping
     public List<Book> getAllBooks(){
@@ -38,8 +53,23 @@ public class BookController {
     }
 
     @PostMapping
-    public Book createBook(@RequestBody Book book){
-        return bookRepository.save(book);
+    public ResponseEntity<ApiResponse<?>> createBook(@RequestBody CreateBookRequest createBookRequest,
+                                                  HttpServletRequest request){
+        String requestId = request.getSession().getId();
+        logger.info("[ {} ] received request to create a new book. book payload: {}", requestId, createBookRequest);
+
+        if (!createBookRequest.isValid()) {
+            ApiResponse<?> apiResponse = ApiResponse.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Title and author were not passed with request",
+                    ErrorResponse.of(List.of("Title and author are required."), "Please try again.",
+                            HttpStatus.BAD_REQUEST.name())
+            );
+            return ResponseEntity.badRequest().body(apiResponse);
+        }
+
+        ApiResponse<?> result = bookService.handleBookCreation(requestId, createBookRequest);
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
